@@ -8,18 +8,19 @@ from django.shortcuts import redirect
 
 def upload_file(request):
     if request.method == "POST":
-        form  = FileUploadForm(request.POST, request.FILES)
+        form = FileUploadForm(request.POST, request.FILES)
         if form.is_valid():
             instance = form.save(commit=False)
-            instance.encryption_key = generate_key().decode()
-            instance.filename = request.FILES['file'].name
+            instance.encryption_key = generate_key().decode()  # Generate the encryption key
+            instance.filename = request.FILES['file'].name  # Save the original file name
             instance.save()
 
-            #encrypt the file
+            # Encrypt the file to ensure no easy access
             file_path = instance.file.path
-            encrypt_file(file_path, instance.encryption_key())
-            return render (request, 'sharing/success.html', {'file:instance'})
-        
+            encrypt_file(file_path, instance.encryption_key)  # Use the string as-is
+
+            return render(request, 'sharing/success.html', {'file': instance})  # Pass the instance to the template
+
     else:
         form = FileUploadForm()
     return render(request, 'sharing/upload.html', {'form': form})
