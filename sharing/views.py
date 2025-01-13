@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from .utils import encrypt_file, generate_key, decrypt_file
 from .models import EncryptedFile
 from .forms import FileUploadForm
-from django.http import HttpResponseRedirect, Http404, FileResponse
+from django.http import HttpResponseRedirect, Http404, FileResponse, HttpResponse
 import os
 from django.shortcuts import redirect
 
@@ -27,14 +27,23 @@ def upload_file(request):
 
 def download_file(request, pk):
     file_instance = get_object_or_404(EncryptedFile, pk=pk)
+    
     try:
-        decrypt_file(file_instance.file.path, file_instance.encryption_key.encode())
-        response = FileResponse(open(file_instance.file.path, 'rb'))
+        # Decrypt the file to a temporary location
+        decrypted_file_path = decrypt_file(file_instance.file.path, file_instance.encryption_key.encode())
 
-        encrypt_file(file_instance.file.path, file_instance.encryption_key.encode())
+        # Serve the decrypted file
+        response = FileResponse(open(decrypted_file_path, 'rb'), as_attachment=True, filename=file_instance.filename)
+
+        # Clean up the temporary decrypted file after serving
+        os.remove(decrypted_file_path)
+        
         return response
     except Exception as e:
-        raise Http404(f"Error: {str(e)}")
+        # Ensure cleanup of the temporary file in case of failure
+        if os.path.exists(decrypted_file_path):
+            os.remove(decrypted_file_path)
+        return HttpResponse(f"Error processing file download: {str(e)}", status=500)
 
 def home(request):
     return redirect('upload_file')
