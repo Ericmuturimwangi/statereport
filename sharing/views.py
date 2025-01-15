@@ -26,24 +26,24 @@ def upload_file(request):
     return render(request, 'sharing/upload.html', {'form': form})
 
 def download_file(request, pk):
-    file_instance = get_object_or_404(EncryptedFile, pk=pk)
-    
     try:
-        # Decrypt the file to a temporary location
-        decrypted_file_path = decrypt_file(file_instance.file.path, file_instance.encryption_key.encode())
+        file_instance = get_object_or_404(EncryptedFile, pk=pk) 
 
-        # Serve the decrypted file
-        response = FileResponse(open(decrypted_file_path, 'rb'), as_attachment=True, filename=file_instance.filename)
+        # Decrypt the file before serving it
+        decrypt_file(file_instance.file.path, file_instance.encryption_key.encode())
 
-        # Clean up the temporary decrypted file after serving
-        os.remove(decrypted_file_path)
-        
+        # Serve the file
+        response = FileResponse(open(file_instance.file.path, 'rb'),
+                                as_attachment=True,
+                                filename=file_instance.file.name)
+
+    # re-encrypt the file after serving
+        decrypt_file(file_instance.file.path, file_instance.encryption_key.encode())
         return response
+
     except Exception as e:
-        # Ensure cleanup of the temporary file in case of failure
-        if os.path.exists(decrypted_file_path):
-            os.remove(decrypted_file_path)
         return HttpResponse(f"Error processing file download: {str(e)}", status=500)
+
 
 def home(request):
     return redirect('upload_file')
