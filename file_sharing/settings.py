@@ -1,4 +1,4 @@
-
+import os
 
 from pathlib import Path
 
@@ -49,7 +49,7 @@ ROOT_URLCONF = "file_sharing.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [os.path.join(BASE_DIR, 'sharing', 'templates')],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
